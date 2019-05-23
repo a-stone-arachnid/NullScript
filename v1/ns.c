@@ -67,7 +67,7 @@ int exec(char* in)
 // Main
 int main(int argc, char** argv)
 {
-    printf("NullScript version 1.0.0\n");
+	printf("NullScript version 1.0.0\n");
 	ns_init();
 	while(1)
 	{
