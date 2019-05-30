@@ -3,6 +3,7 @@
 #include <string.h> // string functions (strlen)
 
 #define tcell cells[cellPtr]
+#define tcmd  cmds[cpos]
 
 // Stores the cells of data, and where we are.
 int cells[256];
@@ -16,6 +17,25 @@ size_t cpos;
 void ns_init() {
 	for(int i=0;i<256;i++) cells[i]=0;
 	cellPtr = 0;
+}
+
+// Helper function for { loops }
+void lLoop(){
+	if(tcell != 0) return;
+	for(;cpos < strlen(cmds);cpos++)
+	{
+		if(tcmd == '}') return;
+	}
+}
+void rLoop(){
+	for(;cpos > 0;cpos--)
+	{
+		if(tcmd == '{') 
+		{
+			cpos--;
+			return;
+		}
+	}
 }
 
 // Execution loop - does commands
@@ -51,8 +71,20 @@ int exec(char* in)
 			cellPtr == 255 ? cellPtr = 0 : cellPtr++;
 			break;
 		case '&':
-			printf("Input: ");
+			printf("Input <int>: ");
 			scanf("%i", &tcell);
+			getchar();
+			break;
+		case '^':
+			printf("Input <char>: ");
+			tcell = getchar();
+			getchar();
+			break;
+		case '{':
+			lLoop();
+			break;
+		case '}':
+			rLoop();
 			break;
 		case 'Q':
 		case 'q':
@@ -93,6 +125,13 @@ int evaluate(char*si)
     printf("\n");
     return 0;
 }
+// Help mode
+int help()
+{
+	version();
+	printf("\nUsage:\nNS\nNS code\nNS -v");
+	return 0;
+}
 
 // Main
 int main(int argc, char** argv)
@@ -100,16 +139,11 @@ int main(int argc, char** argv)
     char mode = 0;
     // constants for versioning to make strcmp happy
     const char *ver = "--version";
-    const char *file = "-f";
+    const char *v = "-v";
     
-    if(argc == 1)
-        return interactive();
-    else if(argc == 2 && !strcmp(argv[1], ver))
-        return version();
-    else if(argc == 2 && !strcmp(argv[1], file)) {
-        printf("ns: fatal error: i didn't get a file :(");
-        return 1;
-    }
-    else if(argc == 2)
-        return evaluate(argv[1]);
+    if(argc == 1) return interactive();
+    else if(argc == 2 && !strcmp(argv[1], ver)) return version();
+    else if(argc == 2 && !strcmp(argv[1], v)) return version();
+    else if(argc == 2) return evaluate(argv[1]);
+	else return help();
 }
