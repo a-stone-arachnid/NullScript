@@ -64,17 +64,52 @@ int exec(char* in)
 	return 1;
 }
 
-// Main
-int main(int argc, char** argv)
+// Version mode
+int version()
 {
-	printf("NullScript version 1.0.0\n");
+    printf("NullScript version 1.0.0\nCopyright (c) 2019 Ethan Nord.");
+    return 0;
+}
+// Interactive mode
+int interactive()
+{
+    printf("NullScript version 1.0.0\n");
 	ns_init();
 	while(1)
 	{
 		printf("\nNS> ");
 		char si[256];
 		fgets(si, sizeof(si), stdin);
-		if(!exec(si)) break;
+		if(!exec(si)) return 0;
 		printf("\n");
 	}
+    return 0;
+}
+// Evil mode
+int evaluate(char*si)
+{
+    ns_init();
+    exec(si);
+    printf("\n");
+    return 0;
+}
+
+// Main
+int main(int argc, char** argv)
+{
+    char mode = 0;
+    // constants for versioning to make strcmp happy
+    const char *ver = "--version";
+    const char *file = "-f";
+    
+    if(argc == 1)
+        return interactive();
+    else if(argc == 2 && !strcmp(argv[1], ver))
+        return version();
+    else if(argc == 2 && !strcmp(argv[1], file)) {
+        printf("ns: fatal error: i didn't get a file :(");
+        return 1;
+    }
+    else if(argc == 2)
+        return evaluate(argv[1]);
 }
