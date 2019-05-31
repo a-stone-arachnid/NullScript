@@ -19,6 +19,8 @@ NullScript has a 256-cell tape of integers and a cell pointer that is on one of 
 |`&`|Get an integer from input|
 |`<`|Move the cell pointer left|
 |`>`|Move the cell pointer right|
+|`{`|If the current cell is 0, skip past the next `}`|
+|`}`|Go back to the previous `{`|
 
 * When squaring a cell pushes it over the limit of the cell's size, the cell should go to 0.
 * When printing a cell as a character and the cell isn't between 0 and 127, the behavior is undefined.
