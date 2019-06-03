@@ -1,5 +1,5 @@
 // NullScript version 1.0.0
-#include <stdio.h>	// i/o capabilities (printf, scanf)
+#include <stdio.h>  // i/o capabilities (printf, scanf)
 #include <string.h> // string functions (strlen)
 
 #define tcell cells[cellPtr]
@@ -14,57 +14,57 @@ size_t cpos;
 
 // Initializer for the globals
 void ns_init() {
-	for(int i=0;i<256;i++) cells[i]=0;
-	cellPtr = 0;
+    for(int i=0;i<256;i++) cells[i]=0;
+    cellPtr = 0;
 }
 
 // Execution loop - does commands
 int exec(char* in)
 {
-	strcpy(cmds, in);
-	for(cpos = 0; cpos < strlen(cmds); cpos++)
-	{
-		switch(cmds[cpos])
-		{
-		case ']':
-			tcell++;
-			break;
-		case '[':
-			tcell--;
-			break;
-		case ';':
-			tcell *= tcell;
-			break;
-		case '.':
-			printf("%d", tcell);
-			break;
-		case ',':
-			putchar(tcell);
-			break;
-		case '~':
-			tcell = 0;
-			break;
-		case '<':
-			cellPtr == 0 ? cellPtr = 255 : cellPtr--;
-			break;
-		case '>':
-			cellPtr == 255 ? cellPtr = 0 : cellPtr++;
-			break;
-		case '&':
-			printf("Input: ");
-			scanf("%i", &tcell);
-			break;
+    strcpy(cmds, in);
+    for(cpos = 0; cpos < strlen(cmds); cpos++)
+    {
+        switch(cmds[cpos])
+        {
+        case ']':
+            tcell++;
+            break;
+        case '[':
+            tcell--;
+            break;
+        case ';':
+            tcell *= tcell;
+            break;
+        case '.':
+            printf("%d", tcell);
+            break;
+        case ',':
+            putchar(tcell);
+            break;
+        case '~':
+            tcell = 0;
+            break;
+        case '<':
+            cellPtr == 0 ? cellPtr = 255 : cellPtr--;
+            break;
+        case '>':
+            cellPtr == 255 ? cellPtr = 0 : cellPtr++;
+            break;
+        case '&':
+            printf("Input: ");
+            scanf("%i", &tcell);
+            break;
         case '!':
             fprintf(stderr, "Fatal error induced.");
             return 0;
-		case 'Q':
-		case 'q':
-			return 0;
-		default:
-			break;
-		}
-	}
-	return 1;
+        case 'Q':
+        case 'q':
+            return 0;
+        default:
+            break;
+        }
+    }
+    return 1;
 }
 
 // Version mode
@@ -77,15 +77,15 @@ int version()
 int interactive()
 {
     version();
-	ns_init();
-	while(1)
-	{
-		printf("\nNS> ");
-		char si[256];
-		fgets(si, sizeof(si), stdin);
-		if(!exec(si)) return 0;
-		printf("\n");
-	}
+    ns_init();
+    while(1)
+    {
+        printf("\nNS> ");
+        char si[256];
+        fgets(si, sizeof(si), stdin);
+        if(!exec(si)) return 0;
+        printf("\n");
+    }
     return 0;
 }
 // Evil mode
