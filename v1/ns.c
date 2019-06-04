@@ -89,6 +89,10 @@ int exec(char* in)
         case '!':
             fprintf(stderr, "FATAL ERROR!!!");
             return 0;
+        case '?':
+            tcell = 4; // chosen by fair dice roll
+                       // guaranteed to be random
+            break;
         case 'Q':
         case 'q':
             return 0;
