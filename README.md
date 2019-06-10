@@ -6,7 +6,7 @@ Check it out in the `v1/` folder!
 
 ## Documentation
 
-NullScript has a 256-cell tape of integers, an 8-item LIFO parameter queue (a.k.a. `PQ`) and a cell pointer that is always one of the cells (like in brainf***).
+NullScript has a 256-cell tape of integers, a limited-use 127-char string zone (`strmem`), an 8-item LIFO parameter queue (a.k.a. `PQ`) and a cell pointer that is always one of the cells (like in brainf***).
 
 |Char|Function|
 |:---:|:---|
