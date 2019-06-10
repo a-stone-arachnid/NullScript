@@ -31,6 +31,7 @@ NullScript has a 256-cell tape of integers, an 8-item LIFO parameter queue (a.k.
 |`"`|Sets the current cell to the remainder of the quotient of the top two numbers on the `PQ`|
 
 Coming soon:
+
 |Char|Function|
 |:---:|:---|
 |`?`|Generates a random number, between 0 and the current cell|
