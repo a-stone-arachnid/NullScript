@@ -1,16 +1,18 @@
 // NullScript version 1.0.0
 #include <stdio.h>  // i/o capabilities (printf, scanf)
 #include <string.h> // string functions (strlen)
+#include <time.h>   // random header file
+#include <stdlib.h> // also random header file
 
 #define tcell cells[cellPtr]
 #define tcmd  cmds[cpos]
 
 typedef struct queue {
-	int items[8];
-	int itemCount;
-	int front;
-	int rear;
-	int maxItems;
+    int items[8];
+    int itemCount;
+    int front;
+    int rear;
+    int maxItems;
 } queue;
 
 // Stores the cells of data, and where we are.
@@ -24,58 +26,66 @@ queue pq;
 char cmds[256];
 size_t cpos;
 
-// Initializer for the globals
+// strmem
+char strmem[128];
+
+// Initializer
 void ns_init() {
     for(int i=0;i<256;i++) cells[i]=0;
     cellPtr = 0;
-	pq.front = 0;
-	pq.rear = -1;
-	pq.itemCount = 0;
-	pq.maxItems = 8;
+    pq.front = 0;
+    pq.rear = -1;
+    pq.itemCount = 0;
+    pq.maxItems = 8;
+    srand(time(NULL));
 }
 
 // Helper function for { loops }
 void lLoop(){
     if(tcell != 0) return;
     for(;cpos < strlen(cmds);cpos++)
-    {
         if(tcmd == '}') return;
-    }
 }
 void rLoop(){
     for(;cpos > 0;cpos--)
-    {
         if(tcmd == '{') 
         {
             cpos--;
             return;
         }
-    }
 }
 
 int pq_get()
 {
-	int data;
-	if(pq.itemCount == 0){
-		printf("Input (int): ");
-		scanf("%d", &data);
-	} else {
-		data = pq.items[pq.front++];
-		if(pq.front == pq.maxItems)
-			pq.front = 0;
-		pq.itemCount--;
-	}
-	return data;  
+    int data;
+    if(pq.itemCount == 0){
+        printf("Input (int): ");
+        scanf("%d", &data);
+    } else {
+        data = pq.items[pq.front++];
+        if(pq.front == pq.maxItems)
+            pq.front = 0;
+        pq.itemCount--;
+    }
+    return data;  
 }
 
 void pq_set(int value)
 {
-	if(pq.itemCount != pq.maxItems)
-	{
-		if(pq.rear == pq.maxItems-1) pq.rear = -1;
-		pq.items[++pq.rear] = value;
-		pq.itemCount++;
-	}
+    if(pq.itemCount != pq.maxItems)
+    {
+        if(pq.rear == pq.maxItems-1) pq.rear = -1;
+        pq.items[++pq.rear] = value;
+        pq.itemCount++;
+    }
+}
+
+// return a random number between 0 and TCELL inclusive.
+// adapted from https://stackoverflow.com/a/2999130/8828658
+int random() {
+    int r, divisor = RAND_MAX / (tcell + 1);
+    do { r = rand() / divisor; } while (r > tcell);
+    return r;
 }
 
 // Execution loop - does commands
@@ -132,27 +142,33 @@ int exec(char* in)
         case '\'':
             tcell = pq_get();
             break;
-		case '+':
-			tcell = pq_get() + pq_get();
-			break;
-		case '-':
-			tcell = pq_get() - pq_get();
-			break;
-		case 'x':
-			tcell = pq_get() * pq_get();
-			break;
-		case '/':
-			tcell = pq_get() / pq_get();
-			break;
-		case '"':
-			tcell = pq_get() % pq_get();
-			break;
+        case '+':
+            tcell = pq_get() + pq_get();
+            break;
+        case '-':
+            tcell = pq_get() - pq_get();
+            break;
+        case 'x':
+            tcell = pq_get() * pq_get();
+            break;
+        case '/':
+            tcell = pq_get() / pq_get();
+            break;
+        case '"':
+            tcell = pq_get() % pq_get();
+            break;
         case '!':
             fprintf(stderr, "FATAL ERROR!!!");
             return 0;
         case '?':
-            tcell = 4; // chosen by fair dice roll
-                       // guaranteed to be random
+            tcell = random();
+            break;
+        case '$':
+            printf("Input (string): ");
+            fgets(strmem, sizeof(strmem), stdin);
+            break;
+        case '#':
+            printf("%s", strmem);
             break;
         case 'Q':
         case 'q':
@@ -190,14 +206,13 @@ int evaluate(char*si)
 {
     ns_init();
     exec(si);
-    printf("\n");
     return 0;
 }
 // Help mode
 int help()
 {
     version();
-    printf("\nUsage:\nNS\nNS code\nNS -v");
+    printf("Read the source code!\n");
     return 0;
 }
 
