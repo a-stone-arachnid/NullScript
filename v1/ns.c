@@ -5,9 +5,20 @@
 #define tcell cells[cellPtr]
 #define tcmd  cmds[cpos]
 
+typedef struct queue {
+	int items[8];
+	int itemCount;
+	int front;
+	int rear;
+	int maxItems;
+} queue;
+
 // Stores the cells of data, and where we are.
 int cells[256];
 int cellPtr;
+
+// Parameter queue
+queue pq;
 
 // Stores the commands and the command that we're currently on.
 char cmds[256];
@@ -17,6 +28,10 @@ size_t cpos;
 void ns_init() {
     for(int i=0;i<256;i++) cells[i]=0;
     cellPtr = 0;
+	pq.front = 0;
+	pq.rear = -1;
+	pq.itemCount = 0;
+	pq.maxItems = 8;
 }
 
 // Helper function for { loops }
@@ -36,6 +51,31 @@ void rLoop(){
             return;
         }
     }
+}
+
+int pq_get()
+{
+	int data;
+	if(pq.itemCount == 0){
+		printf("Input (int): ");
+		scanf("%d", &data);
+	} else {
+		data = pq.items[pq.front++];
+		if(pq.front == pq.maxItems)
+			pq.front = 0;
+		pq.itemCount--;
+	}
+	return data;  
+}
+
+void pq_set(int value)
+{
+	if(pq.itemCount != pq.maxItems)
+	{
+		if(pq.rear == pq.maxItems-1) pq.rear = -1;
+		pq.items[++pq.rear] = value;
+		pq.itemCount++;
+	}
 }
 
 // Execution loop - does commands
@@ -86,6 +126,27 @@ int exec(char* in)
         case '}':
             rLoop();
             break;
+        case '*':
+            pq_set(tcell);
+            break;
+        case '\'':
+            tcell = pq_get();
+            break;
+		case '+':
+			tcell = pq_get() + pq_get();
+			break;
+		case '-':
+			tcell = pq_get() - pq_get();
+			break;
+		case 'x':
+			tcell = pq_get() * pq_get();
+			break;
+		case '/':
+			tcell = pq_get() / pq_get();
+			break;
+		case '"':
+			tcell = pq_get() % pq_get();
+			break;
         case '!':
             fprintf(stderr, "FATAL ERROR!!!");
             return 0;
@@ -143,11 +204,10 @@ int help()
 // Main
 int main(int argc, char** argv)
 {
-    char mode = 0;
     // constants for versioning to make strcmp happy
     const char *ver = "--version";
     const char *v = "-v";
-    
+    // cool stuff
     if(argc == 1) return interactive();
     else if(argc == 2 && !strcmp(argv[1], ver)) return version();
     else if(argc == 2 && !strcmp(argv[1], v)) return version();
