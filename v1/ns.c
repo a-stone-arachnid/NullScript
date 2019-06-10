@@ -1,4 +1,4 @@
-// NullScript version 1.0.0
+// NullScript version 1.2.0
 #include <stdio.h>  // i/o capabilities (printf, scanf)
 #include <string.h> // string functions (strlen)
 #include <time.h>   // random header file
@@ -183,7 +183,7 @@ int exec(char* in)
 // Version mode
 int version()
 {
-    printf("NullScript version 1.1.0\n");
+    printf("NullScript version 1.3.0\n");
     return 0;
 }
 // Interactive mode
