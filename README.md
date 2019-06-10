@@ -6,24 +6,40 @@ Check it out in the `v1/` folder!
 
 ## Documentation
 
-NullScript has a 256-cell tape of integers and a cell pointer that is on one of the cells.
+NullScript has a 256-cell tape of integers, an 8-item LIFO parameter queue (a.k.a. `PQ`) and a cell pointer that is always one of the cells (like in brainf***).
 
 |Char|Function|
 |:---:|:---|
-|`]`|Increment the current cell|
+|`]`|Increments the current cell|
 |`[`|Decrement the current cell|
 |`;`|Square the current cell|
 |`.`|Print the current cell as a number|
 |`,`|Print the current cell as a character|
 |`~`|Reset the current cell to 0|
 |`&`|Get an integer from input|
+|`^`|Get a character from input|
 |`<`|Move the cell pointer left|
 |`>`|Move the cell pointer right|
 |`{`|If the current cell is 0, skip past the next `}`|
 |`}`|Go back to the previous `{`|
+|`*`|Push the current cell to the `PQ`|
+|`'`|Move the top value from the `PQ` into the current cell|
+|`+`|Sets the current cell to the sum of the top two numbers on the `PQ`|
+|`-`|Sets the current cell to the difference of the top two numbers on the `PQ`|
+|`*`|Sets the current cell to the product of the top two numbers on the `PQ`|
+|`/`|Sets the current cell to the quotient of the top two numbers on the `PQ`, rounded down|
+|`"`|Sets the current cell to the remainder of the quotient of the top two numbers on the `PQ`|
+
+Coming soon:
+|Char|Function|
+|:---:|:---|
+|`?`|Generates a random number, between 0 and the current cell|
+|`$`|Store a string from input in `strmem`|
+|`#`|Print the string from `strmem`|
 
 * When squaring a cell pushes it over the limit of the cell's size, the cell should go to 0.
 * When printing a cell as a character and the cell isn't between 0 and 127, the behavior is undefined.
 * When moving the cell pointer would put it below cell 0 or above cell 255 (on zero-based indexing), the cell pointer wraps around to the other side of the tape
+* When getting a value from an empty `PQ`, take input instead.
 
 NullScript files should use the `.ns` file extension.
