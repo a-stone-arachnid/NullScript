@@ -34,8 +34,8 @@ NullScript uses the Mac OS Roman charset.
 |`?`|Generates a random number, between 0 and the current cell|
 |`$`|Store a string from input in `strmem`|
 |`#`|Print the string from `strmem`|
-|`@`|Take a number from `PQ`, and put `strmem`'s char at that position into the accumulator|
-|`` ` ``||
+|`@`|Take a number from `PQ`, and put `strmem`'s char at that position into the current cell|
+|`` ` ``|*pending*|
 |`!`|Throw an error (implementation-dependant)|
 
 * When squaring a cell pushes it over the limit of the cell's size, the cell should go to 0.
