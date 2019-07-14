@@ -8,6 +8,8 @@ Check it out in the `v1/` folder!
 
 NullScript has a 256-cell tape of integers, a limited-use 127-char string zone (`strmem`), an 8-item LIFO parameter queue (a.k.a. `PQ`) and a cell pointer that is always one of the cells (like in brainf***).
 
+NullScript uses the Mac OS Roman charset.
+
 |Char|Function|
 |:---:|:---|
 |`]`|Increments the current cell|
@@ -32,6 +34,9 @@ NullScript has a 256-cell tape of integers, a limited-use 127-char string zone (
 |`?`|Generates a random number, between 0 and the current cell|
 |`$`|Store a string from input in `strmem`|
 |`#`|Print the string from `strmem`|
+|`@`|Take a number from `PQ`, and put `strmem`'s char at that position into the accumulator|
+|`` ` ``||
+|`!`|Throw an error (implementation-dependant)|
 
 * When squaring a cell pushes it over the limit of the cell's size, the cell should go to 0.
 * When printing a cell as a character and the cell isn't between 0 and 127, the behavior is undefined.
