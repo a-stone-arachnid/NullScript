@@ -29,7 +29,7 @@ void loadfile(FILE *file) {
     }
     codelen = i;
     if(ferror(file) != 0) {
-        perror("Unknown error occured");
+        fputs("Unknown error occured", stderr);
         fclose(file);
         exit(EXIT_FAILURE);
     }
@@ -124,7 +124,7 @@ NS_CMD translateCode(NS_CMD c) {
         case K_MOVR: return K_MOVR_M;
         case K_COMP: return K_COMP_M;
         case K_ERRO: return K_ERRO_M;
-        default: return K_ZERO_M;
+        default: return K_NOOP_M;
     }
 }
 
