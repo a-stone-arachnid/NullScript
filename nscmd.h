@@ -38,6 +38,8 @@
 #define K_COMP_M 14
 #define K_ERRO_M 15
 
+#define K_NOOP_M 250
+
 typedef unsigned char NS_CMD;
 
 #define LO4BIT(cmd) ((cmd) & 0x0F)
