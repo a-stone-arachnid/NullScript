@@ -1,6 +1,7 @@
 #include "nscmd.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 #include <stdint.h>
 
@@ -10,6 +11,7 @@ int16_t mem[512], p, ns_errno;
 #define ccell mem[p]
 
 int MODE, codelen;
+// int labels[4096], lnum;
 
 #define M_INTERACTIVE   1 << 1
 #define M_COMPRESSED    1 << 2
@@ -33,21 +35,20 @@ void loadfile(FILE *file) {
     }
 }
 
-int parseCode(int, NS_CMD);
+int parseCode(int, NS_CMD, int*);
 
 int nsshell() {
-    NS_CMD c[4096];
     int i,r;
     
     printf("\n>>> ");
-    fgets(c, 4095, stdin);
+    fgets(code, 4095, stdin);
     while(1) {
-        for(i = 0, r = 1; i < strlen(c); i++) {
-            r=parseCode(0, i[c]);
+        for(i = 0, r = 1; i < strlen(code); i++) {
+            r=parseCode(0, i[code], &i);
             if(r == 0) return 0;
         }
         printf("\n>>> ");
-        fgets(c, 4095, stdin);
+        fgets(code, 4095, stdin);
     }
     return 0;
 }
@@ -91,7 +92,7 @@ int main(int argc, char** argv) {
     fclose(infile);
     
     for(i = 0; i < codelen; i++) {
-        if(parseCode(MODE & M_COMPRESSED, code[i]) == 0) return 0;
+        if(parseCode(MODE & M_COMPRESSED, code[i], &i) == 0) return 0;
     }
     return 0;
 }
@@ -127,7 +128,7 @@ NS_CMD translateCode(NS_CMD c) {
     }
 }
 
-int parseMicroCode(NS_CMD c) {
+int parseMicroCode(NS_CMD c, int* ci) {
     int e;
     switch(c) {
         case K_ZERO_M:
@@ -143,7 +144,7 @@ int parseMicroCode(NS_CMD c) {
             ccell++;
             break;
         case K_PUTD_M:
-            printf("%d", ccell);
+            printf("%d ", ccell);
             break;
         case K_PUTC_M:
             putchar(ccell);
@@ -159,10 +160,22 @@ int parseMicroCode(NS_CMD c) {
             ccell = getchar();
             break;
         case K_LABL_M:
+            break;
         case K_JUMP_M:
+            for(e=*ci; e --> 0 && translateCode(code[e]) != K_LABL_M;);
+            *ci = e;
+            break;
         case K_JMPZ_M:
+            if(ccell == 0) {
+                for(e=*ci; e --> 0 && translateCode(code[e]) != K_LABL_M;);
+                *ci = e;
+            }
+            break;
         case K_JPNZ_M:
-            fputs("Not implemented yet.", stderr);
+            if(ccell != 0) {
+                for(e=*ci; e --> 0 && translateCode(code[e]) != K_LABL_M;);
+                *ci = e;
+            }
             break;
         case K_MOVL_M:
             moveLeft();
@@ -190,9 +203,9 @@ int parseMicroCode(NS_CMD c) {
     return 1;
 }
 
-int parseCode(int d, NS_CMD c) {
+int parseCode(int d, NS_CMD c, int* ci) {
     if(d)
-        return parseMicroCode(HI4BIT(c)) && parseMicroCode(LO4BIT(c));
+        return parseMicroCode(HI4BIT(c), 0) && parseMicroCode(LO4BIT(c), 0);
     else
-        return parseMicroCode(translateCode(c));
+        return parseMicroCode(translateCode(c), ci);
 }
