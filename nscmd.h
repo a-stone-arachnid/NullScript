@@ -13,8 +13,8 @@
 
 #define K_LABL ':'
 #define K_JUMP '|'
-#define K_JMPZ '{'
-#define K_JPNZ '}'
+#define K_JMPZ '}'
+#define K_JPNZ '{'
 #define K_MOVL '<'
 #define K_MOVR '>'
 #define K_COMP '='
