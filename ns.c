@@ -16,8 +16,17 @@ int MODE, codelen;
 #define M_INTERACTIVE   1 << 1
 #define M_COMPRESSED    1 << 2
 
+void version() {
+    puts("NullScript version 2.0.0");
+}
+
 void usage() {
-    puts("usage: ns6 [-i | -c] filename");
+    puts("usage: ns6 [-ci] filename");
+    puts("");
+    puts(" -?\tDisplay this help message");
+    puts(" -c\tOpen file in compressed mode");
+    puts(" -i\tOpen interactive shell instead of a file");
+    puts(" -v\tDisplay version number");
 }
 
 void loadfile(FILE *file) {
@@ -57,12 +66,20 @@ int main(int argc, char** argv) {
     FILE *infile;
     int i, fnp = 0;
     if(argc < 2) {
-        usage();
-        exit(EXIT_FAILURE);
+        // welcome();
+        MODE |= M_INTERACTIVE;
     }
     for(i = 1; i < argc; i++) {
         if(strcmp(argv[i], "-i") == 0) MODE |= M_INTERACTIVE;
         else if(strcmp(argv[i], "-c") == 0) MODE |= M_COMPRESSED;
+        else if(strcmp(argv[i], "-v") == 0) {
+            version();
+            exit(EXIT_SUCCESS);
+        }
+        else if(strcmp(argv[i], "-?") == 0 || strcmp(argv[i], "--help") == 0) {
+            usage();
+            exit(EXIT_SUCCESS);
+        }
         else if(argv[i][0] == '-') {
             usage();
             fprintf(stderr, "\nInvalid option provided: %s\n", argv[i]);
