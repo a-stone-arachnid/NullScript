@@ -17,16 +17,21 @@ int MODE, codelen;
 #define M_COMPRESSED    1 << 2
 
 void version() {
-    puts("NullScript version 2.0.0");
+    puts("NullScript version 2.1.0");
 }
 
-void usage() {
-    puts("usage: ns6 [-ci] filename");
+void usage(char* name) {
+    printf("usage: %s [-ci] filename", name);
     puts("");
     puts(" -?\tDisplay this help message");
     puts(" -c\tOpen file in compressed mode");
-    puts(" -i\tOpen interactive shell instead of a file");
+    puts(" -i\tOpen NullScript in REPL mode");
     puts(" -v\tDisplay version number");
+}
+
+void welcome()
+{
+    version();
 }
 
 void loadfile(FILE *file) {
@@ -47,26 +52,25 @@ void loadfile(FILE *file) {
 int parseCode(int, NS_CMD, int*);
 
 int nsshell() {
-    int i,r;
-    
-    printf("\n>>> ");
-    fgets(code, 4095, stdin);
-    while(1) {
+    int i, r;
+    do {
+        printf("\n> ");
+        fgets(code, 4095, stdin);
         for(i = 0, r = 1; i < strlen(code); i++) {
             r=parseCode(0, i[code], &i);
             if(r == 0) return 0;
         }
-        printf("\n>>> ");
-        fgets(code, 4095, stdin);
-    }
+    } while(1);
     return 0;
 }
 
 int main(int argc, char** argv) {
     FILE *infile;
     int i, fnp = 0;
+
+    srand(time());
     if(argc < 2) {
-        // welcome();
+        welcome();
         MODE |= M_INTERACTIVE;
     }
     for(i = 1; i < argc; i++) {
@@ -77,12 +81,12 @@ int main(int argc, char** argv) {
             exit(EXIT_SUCCESS);
         }
         else if(strcmp(argv[i], "-?") == 0 || strcmp(argv[i], "--help") == 0) {
-            usage();
+            usage(argv[0]);
             exit(EXIT_SUCCESS);
         }
         else if(argv[i][0] == '-') {
-            usage();
-            fprintf(stderr, "\nInvalid option provided: %s\n", argv[i]);
+            fprintf(stderr, "\n%s: invalid option provided: %s\n", argv[0], argv[i]);
+            usage(argv[0]);
             exit(EXIT_FAILURE);
         }
         else {
@@ -94,14 +98,14 @@ int main(int argc, char** argv) {
         return nsshell();
     }
     if(fnp == 0 && !(MODE & M_INTERACTIVE)) {
-        fputs("No input file provided\n", stderr);
-        usage();
+        fprintf(stderr, "%s: no input file provided\n", argv[0]);
+        usage(argv[0]);
         exit(EXIT_FAILURE);
     }
     
     infile = fopen(argv[fnp], "r");
     if(infile == 0) {
-        fprintf(stderr, "\nFile `%s' not found\n", argv[fnp]);
+        fprintf(stderr, "\n%s: file `%s' not found\n", argv[0], argv[fnp]);
         exit(EXIT_FAILURE);
     }
     
@@ -134,7 +138,7 @@ NS_CMD translateCode(NS_CMD c) {
         case K_GETD: return K_GETD_M;
         case K_GETC: return K_GETC_M;
         case K_LABL: return K_LABL_M;
-        case K_JUMP: return K_JUMP_M;
+        case K_RAND: return K_RAND_M;
         case K_JMPZ: return K_JMPZ_M;
         case K_JPNZ: return K_JPNZ_M;
         case K_MOVL: return K_MOVL_M;
@@ -178,9 +182,11 @@ int parseMicroCode(NS_CMD c, int* ci) {
             break;
         case K_LABL_M:
             break;
-        case K_JUMP_M:
-            for(e=*ci; e --> 0 && translateCode(code[e]) != K_LABL_M;);
-            *ci = e;
+        case K_RAND_M:
+            if(ccell != 0)
+                ccell = rand() % ccell;
+            else
+                ccell = rand() % INT16_MAX;
             break;
         case K_JMPZ_M:
             if(ccell == 0) {
