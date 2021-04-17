@@ -12,7 +12,7 @@
 #define K_GETC '\''
 
 #define K_LABL ':'
-#define K_JUMP '|'
+#define K_RAND '?'
 #define K_JMPZ '}'
 #define K_JPNZ '{'
 #define K_MOVL '<'
@@ -30,7 +30,7 @@
 #define K_GETD_M 6
 #define K_GETC_M 7
 #define K_LABL_M 8
-#define K_JUMP_M 9
+#define K_RAND_M 9
 #define K_JMPZ_M 10
 #define K_JPNZ_M 11
 #define K_MOVL_M 12
