@@ -11,7 +11,7 @@ NullScript has a 512-cell tape of 16-bit signed integers.
 |`[`|Decrement current cell
 |`]`|Increment current cell
 |`;`|Square current cell
-|`?`|Set the current cell to a pseudorandom number between `0` and `ccell`.
+|`?`|Set the current cell to a pseudorandom number between `0` and `ccell - 1`.
 |`.`|Print the current cell as a number
 |`,`|Print the current cell as an ASCII character
 |`"`|Take a number as input to the current cell
