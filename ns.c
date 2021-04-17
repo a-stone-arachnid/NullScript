@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     FILE *infile;
     int i, fnp = 0;
 
-    srand(time());
+    srand(time(NULL));
     if(argc < 2) {
         welcome();
         MODE |= M_INTERACTIVE;
