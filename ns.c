@@ -4,9 +4,10 @@
 #include <time.h>
 #include <string.h>
 #include <stdint.h>
+#include <ctype.h>
 
 NS_CMD code[4096];
-int16_t mem[512], p, ns_errno;
+int16_t mem[512], p, ns_errno, nr;
 
 #define ccell mem[p]
 
@@ -15,16 +16,19 @@ int MODE, codelen;
 
 #define M_INTERACTIVE   1 << 1
 #define M_COMPRESSED    1 << 2
+#define M_DEBUG         1 << 3
 
 void version() {
-    puts("NullScript version 2.1.0");
+    puts("NullScript version 2.2.0");
 }
 
 void usage(char* name) {
-    printf("usage: %s [-ci] filename", name);
+    // TODO: Make operation actually match usage
+    printf("usage: %s [-cdi] codefile inputfile", name);
     puts("");
     puts(" -?\tDisplay this help message");
     puts(" -c\tOpen file in compressed mode");
+    puts(" -d\tEnable debug mode");
     puts(" -i\tOpen NullScript in REPL mode");
     puts(" -v\tDisplay version number");
 }
@@ -38,8 +42,7 @@ void loadfile(FILE *file) {
     int i;
     for(i = 0; i < 4096; code[i++] = 0);
     for(i = 0; i < 4096; i++) {
-        code[i] = fgetc(file);
-        if(feof(file) != 0) break;
+        if((code[i] = fgetc(file)) < 0) break;
     }
     codelen = i;
     if(ferror(file) != 0) {
@@ -51,13 +54,23 @@ void loadfile(FILE *file) {
 
 int parseCode(int, NS_CMD, int*);
 
+void debug_out(NS_CMD i)
+{
+    printf("\n=== ccell = %d; nr = %d; p = %d; ===",
+           ccell, nr, p);
+    printf("\nEXECUTING COMMAND: %c\n", i);
+    getchar();
+}
+
 int nsshell() {
     int i, r;
     do {
-        printf("\n> ");
+        printf("\n>>> ");
         fgets(code, 4095, stdin);
-        for(i = 0, r = 1; i < strlen(code); i++) {
-            r=parseCode(0, i[code], &i);
+        codelen = strlen(code);
+        for(i = 0, r = 1; i < codelen; i++) {
+            if(MODE & M_DEBUG) debug_out(code[i]);
+            r=parseCode(0, code[i], &i);
             if(r == 0) return 0;
         }
     } while(1);
@@ -67,15 +80,18 @@ int nsshell() {
 int main(int argc, char** argv) {
     FILE *infile;
     int i, fnp = 0;
-
+    
+    nr = 1;
     srand(time(NULL));
     if(argc < 2) {
         welcome();
         MODE |= M_INTERACTIVE;
     }
     for(i = 1; i < argc; i++) {
+        // TODO: New argument parser that takes "ns -icd"-style arguments
         if(strcmp(argv[i], "-i") == 0) MODE |= M_INTERACTIVE;
         else if(strcmp(argv[i], "-c") == 0) MODE |= M_COMPRESSED;
+        else if(strcmp(argv[i], "-d") == 0) MODE |= M_DEBUG;
         else if(strcmp(argv[i], "-v") == 0) {
             version();
             exit(EXIT_SUCCESS);
@@ -113,6 +129,7 @@ int main(int argc, char** argv) {
     fclose(infile);
     
     for(i = 0; i < codelen; i++) {
+        if(MODE & M_DEBUG) debug_out(code[i]);
         if(parseCode(MODE & M_COMPRESSED, code[i], &i) == 0) return 0;
     }
     return 0;
@@ -127,7 +144,20 @@ void moveRight() {
     else p++;
 }
 
+NS_CMD parseDigit(int d) {
+    if(d == 0 && nr == 1) nr = 0;
+    else if(d == 0) nr = 97;
+    else if(d == 1 && nr == 1) nr = 32;
+    else if(d == 1) nr = 1;
+    else if(nr == 1) nr = d;
+    else nr = nr * d - 1;
+    if(nr < 0) nr = 1;
+    return K_NOOP_M;
+}
+
 NS_CMD translateCode(NS_CMD c) {
+    if(isdigit(c))
+        return parseDigit(c - '0');
     switch(c) {
         case K_ZERO: return K_ZERO_M;
         case K_SQRE: return K_SQRE_M;
@@ -156,29 +186,45 @@ int parseMicroCode(NS_CMD c, int* ci) {
             ccell = 0;
             break;
         case K_SQRE_M:
-            ccell = ccell * ccell;
+            if(nr == 1) ccell = ccell * ccell;
+            else if(nr == 0) ccell = ccell / 2;
+            else ccell = ccell / nr;
             break;
         case K_DECR_M:
-            ccell--;
+            if(nr == 0) nr = 10;
+            ccell -= nr;
             break;
         case K_INCR_M:
-            ccell++;
+            if(nr == 0) nr = 10;
+            ccell += nr;
             break;
         case K_PUTD_M:
-            printf("%d ", ccell);
+            if(nr == 0) nr = 10;
+            for(int i = nr; i --> 0; )
+            printf("%d", ccell);
             break;
         case K_PUTC_M:
-            putchar(ccell);
+            if(nr == 0) {
+                while(ccell) { putchar(ccell); moveLeft(); }
+            }
+            else {
+                for(int i = nr; i --> 0; )
+                    putchar(ccell);
+            }
             break;
         case K_GETD_M:
-            do {
-                printf("Enter a number: ");
-                e = scanf("%hd", &ccell);
-            } while(e == EOF);
+            // TODO: Add support for input from any file.
+            do printf("Enter a number: "); while(scanf("%hd", &ccell) != 1);
             break;
         case K_GETC_M:
-            printf("Enter a character: ");
-            ccell = getchar();
+            if(nr == 0) {
+                for(int x = 1; (x = fread(&ccell, 1, 1, stdin)); moveRight());
+                do moveLeft(); while(ccell != 0);
+            }
+            else {
+                printf("Enter a character: ");
+                ccell = getchar();
+            }
             break;
         case K_LABL_M:
             break;
@@ -189,22 +235,34 @@ int parseMicroCode(NS_CMD c, int* ci) {
                 ccell = rand() % INT16_MAX;
             break;
         case K_JMPZ_M:
-            if(ccell == 0) {
-                for(e=*ci; e --> 0 && translateCode(code[e]) != K_LABL_M;);
+            if(ccell == 0 && nr == 0) *ci = codelen - 1;
+            else if(ccell == 0 && nr == 1) {
+                for(e=*ci; e ++< codelen && translateCode(code[e]) != K_LABL_M;);
+                *ci = e;
+            }
+            else if(ccell == 0) {
+                for(e=*ci; e++ < codelen && nr --> 0; );
                 *ci = e;
             }
             break;
         case K_JPNZ_M:
-            if(ccell != 0) {
+            if(ccell != 0 && nr == 0) *ci = 0;
+            else if(ccell != 0 && nr == 1) {
                 for(e=*ci; e --> 0 && translateCode(code[e]) != K_LABL_M;);
+                *ci = e;
+            }
+            else if(ccell != 0) {
+                for(e=*ci; nr --> 0 && e --> 0;);
                 *ci = e;
             }
             break;
         case K_MOVL_M:
-            moveLeft();
+            if(nr == 0) while(ccell != 0) moveLeft();
+            else while(nr --> 0) moveLeft();
             break;
         case K_MOVR_M:
-            moveRight();
+            if(nr == 0) while(ccell != 0) moveRight();
+            else while(nr --> 0) moveRight();
             break;
         case K_COMP_M:
         {
@@ -223,6 +281,7 @@ int parseMicroCode(NS_CMD c, int* ci) {
             return 0;
         default: break;
     }
+    if(c != K_NOOP_M) nr = 1;
     return 1;
 }
 
