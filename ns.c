@@ -24,6 +24,7 @@ void version() {
 
 void usage(char* name) {
     // TODO: Make operation actually match usage
+    // TODO: Eval mode - like `ns -e "]]];."`
     printf("usage: %s [-cdi] codefile inputfile", name);
     puts("");
     puts(" -?\tDisplay this help message");
@@ -144,6 +145,22 @@ void moveRight() {
     else p++;
 }
 
+// TODO: Add support for input from any file.
+void inputNumber() {
+    do printf("# ");
+       while(scanf("%hd", &ccell) != 1);
+}
+
+void inputChar() {
+    printf("% ");
+    ccell = getchar();
+}
+
+void inputString() {
+    for(int x = 1; (x = fread(&ccell, 1, 1, stdin)); moveRight());
+    do moveLeft(); while(ccell != 0);
+}
+
 NS_CMD parseDigit(int d) {
     if(d == 0 && nr == 1) nr = 0;
     else if(d == 0) nr = 97;
@@ -213,18 +230,11 @@ int parseMicroCode(NS_CMD c, int* ci) {
             }
             break;
         case K_GETD_M:
-            // TODO: Add support for input from any file.
-            do printf("Enter a number: "); while(scanf("%hd", &ccell) != 1);
+            inputNumber();
             break;
         case K_GETC_M:
-            if(nr == 0) {
-                for(int x = 1; (x = fread(&ccell, 1, 1, stdin)); moveRight());
-                do moveLeft(); while(ccell != 0);
-            }
-            else {
-                printf("Enter a character: ");
-                ccell = getchar();
-            }
+            if(nr == 0) inputString();
+            else inputChar();
             break;
         case K_LABL_M:
             break;
