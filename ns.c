@@ -7,16 +7,17 @@
 #include <ctype.h>
 
 NS_CMD code[4096];
-int16_t mem[512], p, ns_errno, nr;
+int16_t mem[4096], p, ns_errno, nr;
 
 #define ccell mem[p]
 
 int MODE, codelen;
-// int labels[4096], lnum;
+FILE* infile;
 
 #define M_INTERACTIVE   1 << 1
 #define M_COMPRESSED    1 << 2
 #define M_DEBUG         1 << 3
+#define M_TTY           1 << 4
 
 void version() {
     puts("NullScript version 2.2.0");
@@ -24,6 +25,7 @@ void version() {
 
 void usage(char* name) {
     // TODO: Make operation actually match usage
+    // TODO: Eval mode - like `ns -e "]]];."`
     printf("usage: %s [-cdi] codefile inputfile", name);
     puts("");
     puts(" -?\tDisplay this help message");
@@ -56,62 +58,74 @@ int parseCode(int, NS_CMD, int*);
 
 void debug_out(NS_CMD i)
 {
-    printf("\n=== ccell = %d; nr = %d; p = %d; ===",
-           ccell, nr, p);
-    printf("\nEXECUTING COMMAND: %c\n", i);
+    fprintf(stderr, "\nnr: %d\tMemory pointer: %d\tCurrent cell: %d",
+            nr, p, ccell);
+    fprintf(stderr, "\nExecuting command: %c\n", i);
     getchar();
 }
 
 int nsshell() {
     int i, r;
-    do {
+    for(;;) {
         printf("\n>>> ");
         fgets(code, 4095, stdin);
         codelen = strlen(code);
         for(i = 0, r = 1; i < codelen; i++) {
             if(MODE & M_DEBUG) debug_out(code[i]);
-            r=parseCode(0, code[i], &i);
-            if(r == 0) return 0;
+            if(parseCode(0, code[i], &i) == 0) return 0;
         }
-    } while(1);
+    }
     return 0;
 }
 
 int main(int argc, char** argv) {
-    FILE *infile;
-    int i, fnp = 0;
+    FILE *ffile;
+    int i, fnp = 0, inp = 0;
     
     nr = 1;
     srand(time(NULL));
     if(argc < 2) {
         welcome();
-        MODE |= M_INTERACTIVE;
+        MODE |= M_INTERACTIVE | M_TTY;
     }
     for(i = 1; i < argc; i++) {
-        // TODO: New argument parser that takes "ns -icd"-style arguments
-        if(strcmp(argv[i], "-i") == 0) MODE |= M_INTERACTIVE;
-        else if(strcmp(argv[i], "-c") == 0) MODE |= M_COMPRESSED;
-        else if(strcmp(argv[i], "-d") == 0) MODE |= M_DEBUG;
-        else if(strcmp(argv[i], "-v") == 0) {
-            version();
-            exit(EXIT_SUCCESS);
-        }
-        else if(strcmp(argv[i], "-?") == 0 || strcmp(argv[i], "--help") == 0) {
-            usage(argv[0]);
-            exit(EXIT_SUCCESS);
-        }
-        else if(argv[i][0] == '-') {
-            fprintf(stderr, "\n%s: invalid option provided: %s\n", argv[0], argv[i]);
-            usage(argv[0]);
-            exit(EXIT_FAILURE);
+        if(argv[i][0] == '-') {
+            int valid = 0;
+
+            if(!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+                version();
+                exit(EXIT_SUCCESS);
+            } else if(!strcmp(argv[i], "-?") || !strcmp(argv[i], "--help")) {
+                usage(argv[0]);
+                exit(EXIT_SUCCESS);
+            }
+
+            if(strstr(argv[i], "i")) valid = MODE |= M_INTERACTIVE | M_TTY;
+            if(strstr(argv[i], "c")) valid = MODE |= M_COMPRESSED;
+            if(strstr(argv[i], "d")) valid = MODE |= M_DEBUG;
+
+            if(valid == 0) {
+                fprintf(stderr, "%s: invalid option provided: %s\n\n",
+                        argv[0], argv[i]);
+                usage(argv[0]);
+                exit(EXIT_FAILURE);
+            }
         }
         else {
-            fnp = i;
-            break;
+            if(fnp == 0 || (MODE & M_INTERACTIVE)) fnp = i;
+            else if(inp == 0) inp = i;
+            else break;
         }
     }
+    infile = (inp == 0) ? stdin : fopen(argv[inp], "r");
+    if(infile == 0 && inp) {
+        fprintf(stderr, "\n%s: file `%s' not found\n", argv[0], argv[inp]);
+        exit(EXIT_FAILURE);
+    }
     if(MODE & M_INTERACTIVE) {
-        return nsshell();
+        int x = nsshell();
+        if(infile != stdin) fclose(infile);
+        return x;
     }
     if(fnp == 0 && !(MODE & M_INTERACTIVE)) {
         fprintf(stderr, "%s: no input file provided\n", argv[0]);
@@ -119,19 +133,20 @@ int main(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
     
-    infile = fopen(argv[fnp], "r");
-    if(infile == 0) {
+    ffile = fopen(argv[fnp], "r");
+    if(ffile == 0) {
         fprintf(stderr, "\n%s: file `%s' not found\n", argv[0], argv[fnp]);
         exit(EXIT_FAILURE);
     }
     
-    loadfile(infile);
-    fclose(infile);
+    loadfile(ffile);
+    fclose(ffile);
     
     for(i = 0; i < codelen; i++) {
         if(MODE & M_DEBUG) debug_out(code[i]);
-        if(parseCode(MODE & M_COMPRESSED, code[i], &i) == 0) return 0;
+        if(parseCode(MODE & M_COMPRESSED, code[i], &i) == 0) break;
     }
+    if(infile != stdin) fclose(infile);
     return 0;
 }
 
@@ -144,12 +159,33 @@ void moveRight() {
     else p++;
 }
 
+void inputNumber() {
+    if(MODE & M_TTY) printf("# ");
+    while(fscanf(infile, "%hd", &ccell) != 1);
+    if(MODE & M_TTY) 
+        for(int x; (x = fgetc(infile)) != '\n' && x != EOF; ); 
+}
+
+void inputChar() {
+    if(MODE & M_TTY) printf("% ");
+    ccell = fgetc(infile);
+    if(ccell == EOF) ccell = 0;
+    if(MODE & M_TTY) 
+        for(int x; (x = fgetc(infile)) != '\n' && x != EOF; ); 
+}
+
+void inputString() {
+    for(int x = 1; (x = fread(&ccell, 1, 1, infile)); moveRight());
+    do moveLeft(); while(ccell != 0);
+}
+
 NS_CMD parseDigit(int d) {
     if(d == 0 && nr == 1) nr = 0;
     else if(d == 0) nr = 97;
     else if(d == 1 && nr == 1) nr = 32;
     else if(d == 1) nr = 1;
     else if(nr == 1) nr = d;
+    else if(nr == 0) nr = 10 * d - 1;
     else nr = nr * d - 1;
     if(nr < 0) nr = 1;
     return K_NOOP_M;
@@ -200,31 +236,18 @@ int parseMicroCode(NS_CMD c, int* ci) {
             break;
         case K_PUTD_M:
             if(nr == 0) nr = 10;
-            for(int i = nr; i --> 0; )
-            printf("%d", ccell);
+            for(; nr --> 0; ) printf("%d", ccell);
             break;
         case K_PUTC_M:
-            if(nr == 0) {
-                while(ccell) { putchar(ccell); moveLeft(); }
-            }
-            else {
-                for(int i = nr; i --> 0; )
-                    putchar(ccell);
-            }
+            if(nr == 0) while(ccell) { putchar(ccell); moveLeft(); }
+            else for(; nr --> 0; ) putchar(ccell);
             break;
         case K_GETD_M:
-            // TODO: Add support for input from any file.
-            do printf("Enter a number: "); while(scanf("%hd", &ccell) != 1);
+            inputNumber();
             break;
         case K_GETC_M:
-            if(nr == 0) {
-                for(int x = 1; (x = fread(&ccell, 1, 1, stdin)); moveRight());
-                do moveLeft(); while(ccell != 0);
-            }
-            else {
-                printf("Enter a character: ");
-                ccell = getchar();
-            }
+            if(nr == 0) inputString();
+            else inputChar();
             break;
         case K_LABL_M:
             break;
