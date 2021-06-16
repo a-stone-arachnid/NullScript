@@ -4,7 +4,7 @@ NullScript is an esolang I made for fun.
 
 ## Commands
 
-NullScript has a 512-cell tape of 16-bit signed integers.
+NullScript has a 4096-cell tape of 16-bit signed integers.
 
 |Command|Description|
 |:-:|---|
